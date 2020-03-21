@@ -1,0 +1,31 @@
+{
+  "name": "test",
+  "version": 1,
+
+  "host": "localhost",
+  "user": "tester",
+  "password": "Password1!",
+
+
+  "tables": {
+    "users": {
+      "id": "KEY",
+      "name": ["VARCHAR(30)", "NOT NULL"],
+      "email": ["VARCHAR(50)", "NOT NULL", "UNIQUE"],
+      "password": ["VARCHAR(32)", "NOT NULL"],
+      "regDate": ["UNSIGNED INT"]
+    },
+    "groups": {
+      "id": ["TINYINT UNSIGNED"],
+      "name": ["VARCHAR(32)", "UNIQUE", "NOT NULL"],
+      "participants": ["ARRAY"],
+      "__KEY": "id"
+    },
+    "facts": {
+      "name": ["VARCHAR(30)", "NOT NULL"],
+      "fact": ["TEXT"],
+      "rating": ["TINYINT", "UNSIGNED"],
+      "__ADDITION": "CHECK(rating > 1)"
+    }
+  }
+}
