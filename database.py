@@ -8,6 +8,8 @@ class Database:
     def __init__(self, database, **options):
         # Variables
         self.update_columns = True
+        # Database tables not checked yet
+        self.checked = False
 
         # Getting information about database
         if type(database) is not dict:
@@ -18,10 +20,8 @@ class Database:
         else:
             self.data = database
 
-        self.con = pymysql.connect(**self.data['connection'])
-
-        # Database tables not checked yet
-        self.checked = False
+        # Starting first connection
+        self.con = self.begin(True)
 
         # Checking options
         options_list = {
@@ -42,9 +42,22 @@ class Database:
         self.end()
 
 # Connection
-    def begin(self):
-        if not self.con.open:
-            self.con = pymysql.connect(**self.data['connection'])
+    def begin(self, first=False):
+        if 'connection' in self.data:
+            con = pymysql.connect(**self.data['connection'])
+        else:
+            params = {}
+            for key in env.keys():
+                if len(key) > 3 and key[:3] == "DB_":
+                    try:
+                        val = int(env[key])
+                    except ValueError:
+                        val = env[key]
+                    params[key[3:].lower()] = val
+            con = pymysql.connect(**params)
+        if first:
+            return con
+        self.con = con
 
     def end(self):
         if self.con.open:
