@@ -11,7 +11,10 @@ class Database:
 
         # Getting information about database
         if type(database) is not dict:
-            self.data = load(database)
+            if database[0] == '{':
+                self.data = load(database)
+            else:
+                self.data = load(open(database, 'r'))
         else:
             self.data = database
 
@@ -23,20 +26,22 @@ class Database:
         # Checking options
         options_list = {
             'UPDATE_COLUMNS': self.upd_cols,
-            'DROP_TABLE': self.drop_table,
+            'DROP_TABLES': self.drop_table,
             'CHECK': self.check
         }
 
         for option, func in options_list.items():
-            if option in options:
-                func(options[option])
-            elif option in env:
+            # Checking environment
+            if 'DBH_' + option in env:
                 func(env[option])
+            # Checking params
+            elif option in options:
+                func(options[option])
 
     def __del__(self):
         self.end()
 
-    # Connection
+# Connection
     def begin(self):
         if not self.con.open:
             self.con = pymysql.connect(**self.data['connection'])
@@ -44,8 +49,9 @@ class Database:
     def end(self):
         if self.con.open:
             self.con.close()
+# ---
 
-    # Utils
+# Utils
     def get_db_tables(self):
         with self.con.cursor() as cur:
             cur.execute("SHOW TABLES")
@@ -59,9 +65,9 @@ class Database:
 
         command = f"CREATE TABLE {table} ("
         for col, params in columns.items():
-            if col == '__KEY':
+            if col == '_KEY':
                 command += f'PRIMARY KEY({params})'
-            elif col == '__ADDITION':
+            elif col == '_ADDITION':
                 command += params
             else:
                 command += col + ' '
@@ -90,7 +96,16 @@ class Database:
             return True
         return False
 
-    # Options
+    @staticmethod
+    def prepare_vals(values: dict):
+        new_vals = {}
+        for key, val in values.items():
+            if type(val) == str and val != '*':
+                new_vals[key] = f"'{val}'"
+        return new_vals
+# ---
+
+# Options
     def upd_cols(self, val=True):
         if val in ['True', 'TRUE', 'true', '1', 'yes', 'y', True, 1]:
             self.update_columns = True
@@ -110,8 +125,8 @@ class Database:
         if not tables:
             return
 
-        print("Are you sure want to drop tables? (y/n)")
-        if input() is not 'y':
+        print(f"Are you sure want to drop {', '.join(tables)}? (y/n)")
+        if input() != 'y':
             return
 
         self.con.cursor().execute("DROP TABLE " + ', '.join(tables))
@@ -143,7 +158,7 @@ class Database:
 
                 # TODO: check params
                 for col in self.data['tables'][table].keys():
-                    if col in ['__ADDITION', '__KEY']:
+                    if col in ['_ADDITION', '_KEY']:
                         continue
 
                     if col not in db_cols.keys():
@@ -158,3 +173,39 @@ class Database:
                 if table not in tables_in_db:
                     cur.execute(self.get_create_cmd(table))
         self.con.commit()
+
+# Methods
+    def insert(self, table, **values):
+        values = self.prepare_vals(values)
+        request = f"INSERT INTO {table}({', '.join(values.keys())}) VALUES({', '.join(values.values())})"
+        self.execute(request)
+
+    def select(self, columns, table, addition=""):
+        request = f"SELECT {', '.join(columns)} FROM {table} {addition}"
+        return self.execute(request)
+
+    def update(self, table, condition, **values):
+        request = f"UPDATE {table} SET "
+
+        for key, val in values.items():
+            if type(val) == str and val != '*':
+                request += key + ' = ' + f"'{val}'" + ', '
+            else:
+                request += key + ' = ' + val + ', '
+            request = request[:-2] + ' WHERE ' + condition
+        self.execute(request)
+
+    def delete(self, table, condition):
+        request = f"DELETE FROM {table} WHERE {condition}"
+        if condition == '*':
+            request = f"DELETE * FROM {table}"
+        self.execute(request)
+
+    def execute(self, sql):
+        with self.con.cursor() as cur:
+            cur.execute(sql)
+            self.con.commit()
+            resp = cur.fetchall()
+            if len(resp) == 1:
+                return resp[0]
+            return resp

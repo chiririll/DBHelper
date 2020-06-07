@@ -2,8 +2,8 @@
   "connection": {
     "db": "test",
     "host": "localhost",
-    "user": "tester",
-    "password": "Password1!"
+    "user": "root",
+    "password": ""
   },
 
   "tables": {
@@ -18,13 +18,13 @@
       "id": ["TINYINT", "UNSIGNED"],
       "name": ["VARCHAR(32)", "UNIQUE", "NOT NULL"],
       "participants": ["TEXT"],
-      "__KEY": "id"
+      "_KEY": "id"
     },
     "facts": {
       "name": ["VARCHAR(30)", "NOT NULL"],
       "fact": ["TEXT"],
       "rating": ["TINYINT", "UNSIGNED"],
-      "__ADDITION": "CHECK(rating > 1)"
+      "_ADDITION": "CHECK(rating > 1)"
     }
   }
 }
