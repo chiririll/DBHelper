@@ -48,4 +48,9 @@ Instead of json you can use path or dict.
 - **DROP_TABLES** _(List of tables or *)_ - dropping tables in list (if * it drops all tables) 
 - **CHECK** *(True/False)* - Check tables in database. If table not in database, it creates.
 
-  
+### Methods
+- **db.insert(_str_ table, _kwargs_ values)**
+- **db.select(_arr_ columns, _str_ table, _str_ addition=" ")**  - Addition example: "WHERE x > 0"
+- **db.update(_str_ table, _kwargs_ values)** - special key '_cond' - condition ("WHERE x > 0")
+- **db.delete(_str_ table, _str_ condition)**
+- **db.execute(_str_ sql_code)**

@@ -197,15 +197,22 @@ class Database:
         request = f"SELECT {', '.join(columns)} FROM {table} {addition}"
         return self.execute(request)
 
-    def update(self, table, condition, **values):
+    def update(self, table, **values):
         request = f"UPDATE {table} SET "
 
         for key, val in values.items():
+            # Skipping special keys
+            if type(val) == str and val in ['_cond']:
+                continue
+
             if type(val) == str and val != '*':
                 request += key + ' = ' + f"'{val}'" + ', '
             else:
                 request += key + ' = ' + val + ', '
-            request = request[:-2] + ' WHERE ' + condition
+
+        # Checking special keys
+        if '_cond' in values.keys():
+            request = request[:-2] + ' WHERE ' + values['_cond']
         self.execute(request)
 
     def delete(self, table, condition):
