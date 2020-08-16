@@ -11,12 +11,17 @@ class Database:
         # Database tables not checked yet
         self.checked = False
 
+        # Custom functions
+        self.functions = None
+
         # Getting information about database
         if type(database) is not dict:
             if database[0] == '{':
                 self.data = load(database)
             else:
-                self.data = load(open(database, 'r'))
+                f = open(database, 'r')
+                self.data = load(f)
+                f.close()
         else:
             self.data = database
 
@@ -25,6 +30,7 @@ class Database:
 
         # Checking options
         options_list = {
+            'FUNCTIONS': self.add_functions,
             'UPDATE_COLUMNS': self.upd_cols,
             'DROP_TABLES': self.drop_table,
             'CHECK': self.check
@@ -119,6 +125,9 @@ class Database:
 # ---
 
 # Options
+    def add_functions(self, functions):
+        self.functions = functions
+
     def upd_cols(self, val=True):
         if val in ['True', 'TRUE', 'true', '1', 'yes', 'y', True, 1]:
             self.update_columns = True
@@ -188,6 +197,11 @@ class Database:
         self.con.commit()
 
 # Methods
+    # Custom functions
+    def run(self, function, **kwargs):
+        kwargs['DB'] = self
+        return self.functions[function](**kwargs)
+
     def insert(self, table, **values):
         values = self.prepare_vals(values)
         request = f"INSERT INTO {table}({', '.join(values.keys())}) VALUES({', '.join(values.values())})"
