@@ -1,56 +1,103 @@
 import pymysql
-from json import load
+import json
 from os import environ as env
 
 
 class Database:
 
-    def __init__(self, database, **options):
-        # Variables
-        self.update_columns = True
-        # Database tables not checked yet
-        self.checked = False
-
-        # Custom functions
-        self.functions = None
-
-        # Getting information about database
-        if type(database) is not dict:
-            if database[0] == '{':
-                self.data = load(database)
-            else:
-                f = open(database, 'r')
-                self.data = load(f)
-                f.close()
-        else:
-            self.data = database
-
-        # Starting first connection
-        self.con = self.begin(True)
-
-        # Checking options
-        options_list = {
-            'FUNCTIONS': self.add_functions,
-            'UPDATE_COLUMNS': self.upd_cols,
-            'DROP_TABLES': self.drop_table,
-            'CHECK': self.check
+    def __init__(self, database, **user_options):
+        # Global dicts #
+        #   states (checked, etc)
+        self._states = {
+            'checked': False,
+            'dropped': False,
+            'cols_updated': False,
+            'cols_added': False,
+            'cols_removed': False
         }
 
-        for option, func in options_list.items():
+        #   connection data (login, password, etc)
+        self._connection_data = {
+            'host': None,
+            'port': None,
+            'db': None,
+            'user': None,
+            'password': None
+        }
+
+        #   options (update_columns, drop_table, etc)
+        self._options = {
+            'check': True,              # Checking database on missing tables
+            'add_cols': True,           # Adding new columns
+            'update_cols': False,       # Updating data tpe in columns
+            'remove_cols': False,       # Removing unknown columns
+            'drop': [],                 # Dropping tables
+            'use_warning': True         # Use warning before dropping
+        }
+
+        #   custom functions
+        self._custom_functions = {}
+        # --- #
+
+        # Getting information about database #
+        if type(database) is dict:
+            self._data = database
+        elif type(database) is str:
+            # Json string
+            if database[0] == '{':
+                self._data = json.loads(database)
+            # File path
+            else:
+                self._data = json.load(database)
+        #   File reader
+        else:
+            self._data = json.loads(''.join(database.readlines()))
+        # --- #
+
+        # Updating options
+        #   Custom functions
+        if 'functions' in user_options.keys():
+            self._custom_functions = user_options['functions']
+        #   Other options
+        for opt in self._options.keys():
             # Checking environment
-            if 'DBH_' + option in env:
-                func(env[option])
-            # Checking params
-            elif option in options:
-                func(options[option])
+            if 'DBH_' + opt.upper() in env:
+                if opt == 'drop':
+                    if env[opt] == '*':
+                        self._options[opt] = '*'
+                    else:
+                        self._options[opt] = env[opt].replace(' ', '').split(',')    # Getting list of tables to drop from environ
+                elif env[opt].lower() in ['true', 'yes', 'y', '1']:
+                    self._options[opt] = True     # Str to boolean
+                elif env[opt].lower() in ['false', 'no', 'n', '0']:
+                    self._options[opt] = False    # Str to boolean
+            # Checking kwargs
+            elif opt in user_options:
+                self._options[opt] = user_options[opt]      # Getting option from kwargs
+
+        # Getting connection info
+        for field in self._connection_data.keys():
+            # Checking environment
+            if 'DBH_' + field.upper() in env:
+                self._connection_data[field] = env[field]
+            # Checking user options
+            elif field in user_options:
+                self._connection_data[field] = user_options[field]
+            # Checking config file
+            elif 'connection' in self._data.keys and field in self._data['connection']:
+                self._connection_data[field] = self._data['connection'][field]
+
+        # Starting first connection
+        if 'start_con' in user_options and user_options['start_con']:
+            self.con = self.begin(True)
 
     def __del__(self):
         self.end()
 
-# Connection
+    # Connection #
     def begin(self, first=False):
-        if 'connection' in self.data:
-            con = pymysql.connect(**self.data['connection'])
+        if 'connection' in self._data:
+            con = pymysql.connect(**self._data['connection'])
         else:
             params = {}
             for key in env.keys():
@@ -61,6 +108,7 @@ class Database:
                         val = env[key]
                     params[key[3:].lower()] = val
             con = pymysql.connect(**params)
+        # TODO: handle options
         if first:
             return con
         self.con = con
@@ -68,9 +116,9 @@ class Database:
     def end(self):
         if self.con.open:
             self.con.close()
-# ---
+    # --- #
 
-# Utils
+    # Utils
     def get_db_tables(self):
         with self.con.cursor() as cur:
             cur.execute("SHOW TABLES")
@@ -80,7 +128,7 @@ class Database:
         return tables
 
     def get_create_cmd(self, table):
-        columns = self.data['tables'][table]
+        columns = self._data['tables'][table]
 
         command = f"CREATE TABLE {table} ("
         for col, params in columns.items():
@@ -122,9 +170,9 @@ class Database:
             if type(val) == str and val != '*':
                 new_vals[key] = f"'{val}'"
         return new_vals
-# ---
+    # ---
 
-# Options
+    # Options
     def add_functions(self, functions):
         self.functions = functions
 
@@ -166,7 +214,7 @@ class Database:
             tables_in_db = self.get_db_tables()
 
             for table in tables_in_db:
-                if table not in self.data['tables'].keys():
+                if table not in self._data['tables'].keys():
                     continue
 
                 # Checking columns
@@ -179,28 +227,27 @@ class Database:
                     db_cols[col_in_db[0]] = col_in_db[1:]
 
                 # TODO: check params
-                for col in self.data['tables'][table].keys():
+                for col in self._data['tables'][table].keys():
                     if col in ['_ADDITION', '_KEY']:
                         continue
 
                     if col not in db_cols.keys():
-                        cur.execute(f"ALTER TABLE {table} ADD {col} {' '.join(self.data['tables'][table][col])};")
+                        cur.execute(f"ALTER TABLE {table} ADD {col} {' '.join(self._data['tables'][table][col])};")
                         continue
 
-                    if not self.compare_data_types(self.data['tables'][table][col], db_cols[col][0]):
-                        cur.execute(f"ALTER TABLE {table} MODIFY COLUMN {col} {' '.join(self.data['tables'][table][col])};")
+                    if not self.compare_data_types(self._data['tables'][table][col], db_cols[col][0]):
+                        cur.execute(f"ALTER TABLE {table} MODIFY COLUMN {col} {' '.join(self._data['tables'][table][col])};")
 
             # Checking tables
-            for table in self.data['tables']:
+            for table in self._data['tables']:
                 if table not in tables_in_db:
                     cur.execute(self.get_create_cmd(table))
         self.con.commit()
 
-# Methods
+    # Methods
     # Custom functions
     def run(self, function, **kwargs):
-        kwargs['DB'] = self
-        return self.functions[function](**kwargs)
+        return self.functions[function](self, **kwargs)
 
     def insert(self, table, **values):
         values = self.prepare_vals(values)
