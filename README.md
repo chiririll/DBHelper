@@ -84,7 +84,7 @@ Default value is **bold**.
 
 - **select**(_arr_ columns, _str_ table, _str_ addition=" ") - Addition example: "WHERE x > 0"
 
-- **update**(_str_ table, _kwargs_ values) - special key '_cond' - condition ("WHERE x > 0")
+- **update**(_str_ table, _kwargs_ values) - special key '_cond' - condition ("x > 0")
 
 - **delete**(_str_ table, _str_ condition)
 
