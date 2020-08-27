@@ -20,7 +20,7 @@ class Database:
         self._connection_data = {
             'host': None,
             'port': None,
-            'db': None,
+            'database': None,
             'user': None,
             'password': None
         }
@@ -63,10 +63,7 @@ class Database:
             # Checking environment
             if 'DBH_' + opt.upper() in env:
                 if opt == 'drop':
-                    if env[opt] == '*':
-                        self._options[opt] = '*'
-                    else:
-                        self._options[opt] = env[opt].replace(' ', '').split(',')    # Getting list of tables to drop from environ
+                    self._options[opt] = env[opt].replace(' ', '').split(',')    # Getting list of tables to drop from environ
                 elif env[opt].lower() in ['true', 'yes', 'y', '1']:
                     self._options[opt] = True     # Str to boolean
                 elif env[opt].lower() in ['false', 'no', 'n', '0']:
@@ -88,46 +85,36 @@ class Database:
                 self._connection_data[field] = self._data['connection'][field]
 
         # Starting first connection
+        self._con = None
         if 'start_con' in user_options and user_options['start_con']:
-            self.con = self.begin(True)
+            self.begin()
 
     def __del__(self):
         self.end()
 
     # Connection #
-    def begin(self, first=False):
-        if 'connection' in self._data:
-            con = pymysql.connect(**self._data['connection'])
-        else:
-            params = {}
-            for key in env.keys():
-                if len(key) > 3 and key[:3] == "DB_":
-                    try:
-                        val = int(env[key])
-                    except ValueError:
-                        val = env[key]
-                    params[key[3:].lower()] = val
-            con = pymysql.connect(**params)
-        # TODO: handle options
-        if first:
-            return con
-        self.con = con
+    def begin(self):
+        self._con = pymysql.connect(**self._connection_data)
+
+        # Handling options
+        self._drop_tables()
+        self._check()
 
     def end(self):
-        if self.con.open:
-            self.con.close()
+        if self._con.open:
+            self._con.close()
     # --- #
 
-    # Utils
-    def get_db_tables(self):
-        with self.con.cursor() as cur:
+    # Utils #
+    def _get_db_tables(self):
+        with self._con.cursor() as cur:
             cur.execute("SHOW TABLES")
             tables = []
             for el in cur.fetchall():
                 tables.append(el[0])
         return tables
 
-    def get_create_cmd(self, table):
+    def _gen_table_creating_cmd(self, table):
         columns = self._data['tables'][table]
 
         command = f"CREATE TABLE {table} ("
@@ -146,7 +133,7 @@ class Database:
         return command[:-2] + ');'
 
     @staticmethod
-    def compare_data_types(local, db):
+    def _compare_data_types(local, db):
         if local == 'KEY':
             return True
         local = local[0]
@@ -164,93 +151,100 @@ class Database:
         return False
 
     @staticmethod
-    def prepare_vals(values: dict):
+    def _prepare_vals(values: dict):
         new_vals = {}
         for key, val in values.items():
             if type(val) == str and val != '*':
                 new_vals[key] = f"'{val}'"
         return new_vals
-    # ---
+    # --- #
 
-    # Options
-    def add_functions(self, functions):
-        self.functions = functions
-
-    def upd_cols(self, val=True):
-        if val in ['True', 'TRUE', 'true', '1', 'yes', 'y', True, 1]:
-            self.update_columns = True
-        else:
-            self.update_columns = False
-
-    def drop_table(self, tables="[]"):
-        if type(tables) is str:
-            tables.replace(' ', '')
-            tables.replace('[', '')
-            tables.replace(']', '')
-            tables = tables.split(',')
-
-        if len(tables) > 0 and tables[0] == '*':
-            tables = self.get_db_tables()
-
-        if not tables:
+    # Options #
+    def _drop_tables(self):
+        # If already dropped
+        if self._states['dropped']:
             return
 
-        print(f"Are you sure want to drop {', '.join(tables)}? (y/n)")
-        if input() != 'y':
+        # If drop all
+        if len(self._options['drop']) > 0 and self._options['drop'][0] == '*':
+            self._options['drop'] = self._get_db_tables()
+
+        # If table list empty
+        if not self._options['drop']:
             return
 
-        self.con.cursor().execute("DROP TABLE " + ', '.join(tables))
-        self.con.commit()
-        self.checked = False
-        self.check()
+        # Confirming
+        if self._options['use_warning']:
+            print(f"Are you sure want to drop {', '.join(self._options['drop'])}? (y/n)")
+            if input() != 'y':
+                return
 
-    def check(self, val='1'):
-        if self.checked or val not in ['True', 'TRUE', 'true', '1', 'yes', 'y', True, 1]:
+        # Executing SQL
+        self._con.cursor().execute("DROP TABLE " + ', '.join(self._options['drop']))
+        self._con.commit()
+
+        # Changing states
+        self._states['checked'] = False
+        self._states['dropped'] = True
+
+        # Recreating tables
+        self._check()
+
+    def _check(self):
+        if self._states['checked']:
             return
 
-        with self.con.cursor() as cur:
+        with self._con.cursor() as cur:
             cur.execute("SHOW TABLES")
+            tables_in_db = self._get_db_tables()
 
-            tables_in_db = self.get_db_tables()
-
+            # Checking tables
             for table in tables_in_db:
+                # Skipping unknown tables
                 if table not in self._data['tables'].keys():
                     continue
 
-                # Checking columns
-                if not self.update_columns:
-                    continue
-
+                # Getting list of columns in table
                 cur.execute(f"DESCRIBE {table}")
                 db_cols = {}
                 for col_in_db in cur.fetchall():
                     db_cols[col_in_db[0]] = col_in_db[1:]
 
-                # TODO: check params
+                # Removing unknown columns
+                for col in db_cols.keys():
+                    if col not in self._data['tables'][table].keys():
+                        cur.execute(f"ALTER TABLE {table} DROP COLUMN {col};")
+
+                # Checking columns
                 for col in self._data['tables'][table].keys():
-                    if col in ['_ADDITION', '_KEY']:
+                    # Skipping keywords
+                    if col.upper() in ['_ADDITION', '_KEY']:
                         continue
 
-                    if col not in db_cols.keys():
+                    # Adding missing columns
+                    if self._options['add_cols'] and col not in db_cols.keys():
                         cur.execute(f"ALTER TABLE {table} ADD {col} {' '.join(self._data['tables'][table][col])};")
                         continue
 
-                    if not self.compare_data_types(self._data['tables'][table][col], db_cols[col][0]):
+                    # Changing data type
+                    if self._options['update_cols'] and not self._compare_data_types(self._data['tables'][table][col], db_cols[col][0]):
                         cur.execute(f"ALTER TABLE {table} MODIFY COLUMN {col} {' '.join(self._data['tables'][table][col])};")
 
             # Checking tables
             for table in self._data['tables']:
                 if table not in tables_in_db:
-                    cur.execute(self.get_create_cmd(table))
-        self.con.commit()
+                    cur.execute(self._gen_table_creating_cmd(table))
+        # Committing changes
+        self._con.commit()
+    # --- #
 
     # Methods
-    # Custom functions
+    #   Custom functions
     def run(self, function, **kwargs):
-        return self.functions[function](self, **kwargs)
+        return self._custom_functions[function](self, **kwargs)
 
     def insert(self, table, **values):
-        values = self.prepare_vals(values)
+        values = self._prepare_vals(values)
         request = f"INSERT INTO {table}({', '.join(values.keys())}) VALUES({', '.join(values.values())})"
         self.execute(request)
 
@@ -283,9 +277,9 @@ class Database:
         self.execute(request)
 
     def execute(self, sql):
-        with self.con.cursor() as cur:
+        with self._con.cursor() as cur:
             cur.execute(sql)
-            self.con.commit()
+            self._con.commit()
             resp = cur.fetchall()
             if len(resp) == 1:
                 return resp[0]
