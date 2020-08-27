@@ -1,6 +1,6 @@
 {
   "connection": {
-    "db": "test",
+    "db": "DBHelper",
     "port": 3306,
     "host": "localhost",
     "user": "root",
@@ -8,24 +8,9 @@
   },
 
   "tables": {
-    "users": {
+    "messages": {
       "id": "KEY",
-      "name": ["VARCHAR(30)", "NOT NULL"],
-      "email": ["VARCHAR(50)", "NOT NULL", "UNIQUE"],
-      "password": ["VARCHAR(32)", "NOT NULL"],
-      "regDate": ["INT", "UNSIGNED"]
-    },
-    "groups_t": {
-      "id": ["TINYINT", "UNSIGNED"],
-      "name": ["VARCHAR(32)", "UNIQUE", "NOT NULL"],
-      "participants": ["TEXT"],
-      "_KEY": "id"
-    },
-    "facts": {
-      "name": ["VARCHAR(30)", "NOT NULL"],
-      "fact": ["TEXT"],
-      "rating": ["TINYINT", "UNSIGNED"],
-      "_ADDITION": "CHECK(rating > 1)"
+      "message": ["TEXT"]
     }
   }
 }

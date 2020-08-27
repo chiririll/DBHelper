@@ -1,11 +1,7 @@
 # PyMySQL Helper
 
 ## TODO
-- add description
-- add info about custom functions
-- add scripts
-- add info about json
-- separate script 
+- add console scripts
 
 ## Connecting to database
 
@@ -15,7 +11,7 @@
 
 Instead of json you can use path to file with json, dict or file reader. 
 
-### Json example
+## Json example
 
     {
       "connection": {
@@ -48,6 +44,11 @@ Instead of json you can use path to file with json, dict or file reader.
         }
       }
     }
+### Special keys
+
+- **_KEY** - Primary key
+
+- **_ADDITION** - SQL code that adds to creating table request
 
 ## Connection data
 
@@ -99,7 +100,7 @@ Default value is **bold**.
 Custom function can be executed with method: 
 - **db.run**(_str_ function_name, _kwargs_ params)
 
-### Example
+### Example code
 
     import DBHelper
     

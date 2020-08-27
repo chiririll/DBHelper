@@ -5,7 +5,7 @@ from os import environ as env
 
 class Database:
 
-    def __init__(self, database, **user_options):
+    def __init__(self, database, **input_options):
         # Global dicts #
         #   states (checked, etc)
         self._states = {
@@ -19,7 +19,7 @@ class Database:
         #   connection data (login, password, etc)
         self._connection_data = {
             'host': None,
-            'port': None,
+            'port': 3306,
             'database': None,
             'user': None,
             'password': None
@@ -48,7 +48,9 @@ class Database:
                 self._data = json.loads(database)
             # File path
             else:
-                self._data = json.load(database)
+                f = open(database)
+                self._data = json.load(f)
+                f.close()
         #   File reader
         else:
             self._data = json.loads(''.join(database.readlines()))
@@ -56,8 +58,8 @@ class Database:
 
         # Updating options
         #   Custom functions
-        if 'functions' in user_options.keys():
-            self._custom_functions = user_options['functions']
+        if 'functions' in input_options.keys():
+            self._custom_functions = input_options['functions']
         #   Other options
         for opt in self._options.keys():
             # Checking environment
@@ -69,24 +71,26 @@ class Database:
                 elif env[opt].lower() in ['false', 'no', 'n', '0']:
                     self._options[opt] = False    # Str to boolean
             # Checking kwargs
-            elif opt in user_options:
-                self._options[opt] = user_options[opt]      # Getting option from kwargs
+            elif opt in input_options:
+                self._options[opt] = input_options[opt]      # Getting option from kwargs
 
         # Getting connection info
         for field in self._connection_data.keys():
             # Checking environment
             if 'DBH_' + field.upper() in env:
-                self._connection_data[field] = env[field]
+                self._connection_data[field] = env['DBH_' + field.upper()]
             # Checking user options
-            elif field in user_options:
-                self._connection_data[field] = user_options[field]
+            elif field in input_options:
+                self._connection_data[field] = input_options[field]
             # Checking config file
-            elif 'connection' in self._data.keys and field in self._data['connection']:
+            elif 'connection' in self._data.keys() and field in self._data['connection'].keys():
                 self._connection_data[field] = self._data['connection'][field]
 
         # Starting first connection
         self._con = None
-        if 'start_con' in user_options and user_options['start_con']:
+        if 'start_con' in input_options and not input_options['start_con']:
+            pass
+        else:
             self.begin()
 
     def __del__(self):
@@ -96,13 +100,14 @@ class Database:
     def begin(self):
         self._con = pymysql.connect(**self._connection_data)
 
-        # Handling options
         self._drop_tables()
         self._check()
 
     def end(self):
-        if self._con.open:
+        try:
             self._con.close()
+        except AttributeError:
+            pass
     # --- #
 
     # Utils #

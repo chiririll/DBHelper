@@ -1,0 +1,8 @@
+{
+  "tables": {
+    "messages": {
+      "id": "KEY",
+      "message": ["TEXT"]
+    }
+  }
+}

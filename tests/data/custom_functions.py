@@ -2,13 +2,10 @@ from database import Database
 
 
 def test(db: Database, **kwargs):
-    db.insert('users', message=kwargs['message'])
-    return db.select(['name'], 'users')
+    db.insert('messages', message=kwargs['message'])
+    return db.select(['message'], 'messages')[0][0]
 
 
-funcs = {
+cfuncs = {
     'test': test
 }
-
-db = Database('data/Database.json', functions=funcs)
-print(db.run('test', message="Hello, World!"))
