@@ -1,11 +1,8 @@
 # PyMySQL Helper
 
-## TODO
-- add console scripts
-
 ## Connecting to database
 
-    import DBHelper
+    from DBHelper import Database 
     
     db = Database(JSON, OPTIONS)
 
@@ -102,13 +99,11 @@ Custom function can be executed with method:
 
 ### Example code
 
-    import DBHelper
-    
+    from DBHelper import Database
     
     def test(db: Database, **kwargs):
-        db.insert('users', message=kwargs['message'])
-        return db.select(['name'], 'users')
-    
+        db.insert('facts', name='test' fact=kwargs['message'])
+        return db.select(['name'], 'facts')
     
     funcs = {
         'test': test

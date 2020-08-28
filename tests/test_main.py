@@ -1,53 +1,7 @@
-import json
 import unittest
-from tests.data.custom_functions import cfuncs
-from database import Database
-from os import environ as env
 
-
-class TestCustomFunctions(unittest.TestCase):
-
-    def test_custom_functions(self):
-        msg = 'test'
-        db = Database("data/Database.json", functions=cfuncs)
-        assert db.run('test', message=msg) == msg
-
-
-class TestConnection(unittest.TestCase):
-
-    def test_path(self):
-        db = Database("data/Database.json")
-
-    def test_dict(self):
-        f = open("data/Database.json")
-        data = json.load(f)
-        f.close()
-        db = Database(data)
-
-    def test_string(self):
-        f = open("data/Database.json")
-        string = f.readlines()
-        string = ' '.join(string)
-        string = string.replace('\n', '').replace('\\', '')
-        db = Database(string)
-
-    def test_reader(self):
-        f = open("data/Database.json")
-        db = Database(f)
-        f.close()
-
-    def test_params(self):
-        db = Database("data/DB_NC.json", host="localhost", user="root", password="", db="DBHelper")
-
-    def test_environ(self):
-        if 'DBH_HOST' in env.keys():
-            db = Database("data/DB_NC.json")
-
-
-# TODO: Write functions tests
-
-
-# TODO: Write options tests
+from tests.test_funcs import TestCustomFunctions
+from tests.test_options import TestOptions
 
 
 if __name__ == '__main__':

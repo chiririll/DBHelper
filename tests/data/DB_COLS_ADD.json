@@ -1,0 +1,17 @@
+{
+  "connection": {
+    "db": "DBHelper",
+    "port": 3306,
+    "host": "localhost",
+    "user": "root",
+    "password": ""
+  },
+
+  "tables": {
+    "messages": {
+      "id": "KEY",
+      "message": ["TEXT"],
+      "test_col": ["INT"]
+    }
+  }
+}

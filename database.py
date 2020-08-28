@@ -2,6 +2,8 @@ import pymysql
 import json
 from os import environ as env
 
+# TODO: Write scripts for managing
+
 
 class Database:
 
@@ -21,6 +23,7 @@ class Database:
             'host': None,
             'port': 3306,
             'database': None,
+            'db': None,
             'user': None,
             'password': None
         }
@@ -108,7 +111,7 @@ class Database:
             self._con.close()
         except AttributeError:
             pass
-    # --- #
+    # ----- #
 
     # Utils #
     def _get_db_tables(self):
@@ -162,7 +165,7 @@ class Database:
             if type(val) == str and val != '*':
                 new_vals[key] = f"'{val}'"
         return new_vals
-    # --- #
+    # ----- #
 
     # Options #
     def _drop_tables(self):
@@ -196,7 +199,7 @@ class Database:
         self._check()
 
     def _check(self):
-        if self._states['checked']:
+        if self._states['checked'] or not self._options['check']:
             return
 
         with self._con.cursor() as cur:
@@ -241,9 +244,9 @@ class Database:
                     cur.execute(self._gen_table_creating_cmd(table))
         # Committing changes
         self._con.commit()
-    # --- #
+    # ----- #
 
-    # Methods
+    # Methods #
     #   Custom functions
     def run(self, function, **kwargs):
         return self._custom_functions[function](self, **kwargs)
@@ -289,3 +292,4 @@ class Database:
             if len(resp) == 1:
                 return resp[0]
             return resp
+    # ----- #
