@@ -8,6 +8,25 @@ from os import environ as env
 class Database:
 
     def __init__(self, database, **input_options):
+        """
+        :param database: File/string/dict/json with database structure
+        :param input_options: Options and login data for database
+
+        :key check: Check tables (create missing), should be boolean
+        :key add_cols: Add new columns added to database info file, should be boolean
+        :key update_cols: Update data types of columns, should be boolean
+        :key remove_cols: Remove columns that not exists in database info file, should be boolean
+        :key drop: List of tables to drop or string '*' (all), should be list or string
+        :key use_warning: Require confirmation in console for dropping, should be boolean
+
+        :key host: Hostname, should be string
+        :key port: Port, should be int
+        :key user: Username, should be string
+        :key password: Password, should be string
+        :key database: Name of database to work with, should be string
+        :key db: Alias for database, should be string
+        """
+
         # Global dicts #
         #   states (checked, etc)
         self._states = {
