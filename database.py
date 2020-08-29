@@ -75,7 +75,7 @@ class Database:
                 f.close()
         #   File reader
         else:
-            self._data = json.loads(''.join(database.readlines()))
+            self._data = json.loads(database.read())
         # --- #
 
         # Updating options

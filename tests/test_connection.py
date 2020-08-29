@@ -17,8 +17,7 @@ class TestConnection(unittest.TestCase):
 
     def test_string(self):
         f = open("data/Database.json")
-        string = f.readlines()
-        string = ' '.join(string)
+        string = f.read()
         string = string.replace('\n', '').replace('\\', '')
         db = Database(string)
 

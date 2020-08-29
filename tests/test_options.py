@@ -14,8 +14,17 @@ class TestOptions(unittest.TestCase):
         self.assertEqual(db.execute("SHOW TABLES;")[0], 'messages')
 
     def test_drop_warn(self):
-        db = Database('data/Database.json', drop=['messages'])
-        self.assertEqual(db.execute("SHOW TABLES;")[0], 'messages')
+        db = Database('data/DB_TABLES_ADD.json')
+        self.assertEqual(2, len(db.execute("SHOW TABLES;")))
+        del db
+
+        print('Print n:')
+        db = Database('data/Database.json', drop='*')
+        self.assertEqual(2, len(db.execute("SHOW TABLES;")))
+
+        print('Print y:')
+        db = Database('data/Database.json', drop='*')
+        self.assertEqual(1, len(db.execute("SHOW TABLES;")))
     # ----- #
 
     # Columns #
