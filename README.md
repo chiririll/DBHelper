@@ -1,5 +1,7 @@
 # PyMySQL Helper~~~~
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/9aad989623c2414b8c31789b9e4e36e5)](https://app.codacy.com/manual/sstive/DBHelper?utm_source=github.com&utm_medium=referral&utm_content=sstive/DBHelper&utm_campaign=Badge_Grade_Dashboard)
+
 ## Connecting to database
 
     from DBHelper import Database 
