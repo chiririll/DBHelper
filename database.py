@@ -153,7 +153,7 @@ class Database:
             else:
                 command += col + ' '
                 if params == 'KEY':
-                    command += "INT AUTO_INCREMENT NOT NULL UNIQUE PRIMARY KEY"
+                    command += "INT AUTO_INCREMENT NOT NULL PRIMARY KEY"
                 else:
                     command += ' '.join(params)
             command += ', '
