@@ -308,7 +308,7 @@ class Database:
             cur.execute(sql)
             self._con.commit()
             resp = cur.fetchall()
-            if len(resp) == 1:
-                return resp[0]
+            # if len(resp) == 1:
+            #     return resp[0]
             return resp
     # ----- #
