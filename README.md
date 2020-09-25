@@ -81,9 +81,11 @@ Default value is **bold**.
 
 - **insert**(_str_ table, _kwargs_ values)
 
-- **select**(_arr_ columns, _str_ table, _str_ addition=" ") - Addition example: "WHERE x > 0"
+- **select**(_str_ table, _list_ columns, _str_ addition=" ") - Addition example: "WHERE x > 0"
 
-- **update**(_str_ table, _kwargs_ values) - special key '_cond' - condition ("x > 0")
+- **update**(_str_ table, _str_ condition, _kwargs_ values)
+
+- **insert_or_update**(_str_ table, _kwargs_ values)
 
 - **delete**(_str_ table, _str_ condition)
 
@@ -104,7 +106,7 @@ Custom function can be executed with method:
     
     def test(db: Database, **kwargs):
         db.insert('facts', name='test' fact=kwargs['message'])
-        return db.select(['name'], 'facts')
+        return db.select('facts', ['name'])
     
     funcs = {
         'test': test

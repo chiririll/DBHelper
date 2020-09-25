@@ -178,11 +178,13 @@ class Database:
         return False
 
     @staticmethod
-    def _prepare_vals(values: dict):
+    def _prepare_vals(values: dict, **options):
         new_vals = {}
         for key, val in values.items():
             if type(val) == str and val != '*':
-                new_vals[key] = f"'{val}'"
+                new_vals[key] = f"\'{val}\'"
+            elif 'all_str' in options.keys() and options['all_str']:
+                new_vals[key] = str(val)
         return new_vals
     # ----- #
 
@@ -271,30 +273,32 @@ class Database:
         return self._custom_functions[function](self, **kwargs)
 
     def insert(self, table, **values):
-        values = self._prepare_vals(values)
-        request = f"INSERT INTO {table}({', '.join(values.keys())}) VALUES({', '.join(values.values())})"
+        values = self._prepare_vals(values, all_str=True)
+        request = f"INSERT INTO {table} ({', '.join(values.keys())}) VALUES ({', '.join(values.values())})"
         self.execute(request)
 
-    def select(self, columns, table, addition=""):
+    def insert_or_update(self, table, **values):
+        values = self._prepare_vals(values, all_str=True)
+
+        request = f"INSERT INTO {table} ({', '.join(values.keys())}) VALUES ({', '.join(values.values())}) " \
+                  f"ON DUPLICATE KEY UPDATE {', '.join(list(map(lambda pair: '='.join(pair), values.items())))}"
+        self.execute(request)
+
+    def select(self, table, columns, addition=""):
         request = f"SELECT {', '.join(columns)} FROM {table} {addition}"
         return self.execute(request)
 
-    def update(self, table, **values):
-        request = f"UPDATE {table} SET "
+    def update(self, table, condition="", **values):
+        values = self._prepare_vals(values, all_str=True)
+        request = f"UPDATE {table} SET {', '.join(list(map(lambda pair: '='.join(pair), values.items())))}"
 
-        for key, val in values.items():
-            # Skipping special keys
-            if type(val) == str and val in ['_cond']:
-                continue
+        # Condition
+        c = condition.split(' ')
+        if c[0].upper() == 'WHERE':
+            condition = ' '.join(c[1:])
+        if len(condition) > 0:
+            request = request + ' WHERE ' + condition
 
-            if type(val) == str and val != '*':
-                request += key + ' = ' + f"'{val}'" + ', '
-            else:
-                request += key + ' = ' + val + ', '
-
-        # Checking special keys
-        if '_cond' in values.keys():
-            request = request[:-2] + ' WHERE ' + values['_cond']
         self.execute(request)
 
     def delete(self, table, condition):

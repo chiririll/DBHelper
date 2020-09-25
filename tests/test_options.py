@@ -7,11 +7,11 @@ class TestOptions(unittest.TestCase):
     # Dropping #
     def test_drop_all(self):
         db = Database('data/Database.json', drop='*', use_warning=False)
-        self.assertEqual(db.execute("SHOW TABLES;")[0], 'messages')
+        self.assertEqual(db.execute("SHOW TABLES;")[0][0], 'messages')
 
     def test_drop_one(self):
         db = Database('data/Database.json', drop=['messages'], use_warning=False)
-        self.assertEqual(db.execute("SHOW TABLES;")[0], 'messages')
+        self.assertEqual(db.execute("SHOW TABLES;")[0][0], 'messages')
 
     def test_drop_warn(self):
         db = Database('data/DB_TABLES_ADD.json')
@@ -51,3 +51,7 @@ class TestOptions(unittest.TestCase):
         db = Database('data/DB_COLS_CHANGE.json', check=False)
         self.assertEqual(0, len(db.execute("SHOW TABLES;")))
     # ----- #
+
+
+if __name__ == '__main__':
+    unittest.main()
