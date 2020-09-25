@@ -2,6 +2,7 @@ import pymysql
 import json
 from os import environ as env
 
+
 # TODO: Write scripts for managing
 
 
@@ -49,12 +50,12 @@ class Database:
 
         #   options (update_columns, drop_table, etc)
         self._options = {
-            'check': True,              # Checking database on missing tables
-            'add_cols': True,           # Adding new columns
-            'update_cols': False,       # Updating data tpe in columns
-            'remove_cols': False,       # Removing unknown columns
-            'drop': [],                 # Dropping tables
-            'use_warning': True         # Use warning before dropping
+            'check': True,  # Checking database on missing tables
+            'add_cols': True,  # Adding new columns
+            'update_cols': False,  # Updating data tpe in columns
+            'remove_cols': False,  # Removing unknown columns
+            'drop': [],  # Dropping tables
+            'use_warning': True  # Use warning before dropping
         }
 
         #   custom functions
@@ -87,14 +88,15 @@ class Database:
             # Checking environment
             if 'DBH_' + opt.upper() in env:
                 if opt == 'drop':
-                    self._options[opt] = env[opt].replace(' ', '').split(',')    # Getting list of tables to drop from environ
+                    self._options[opt] = env[opt].replace(' ', '').split(
+                        ',')  # Getting list of tables to drop from environ
                 elif env[opt].lower() in ['true', 'yes', 'y', '1']:
-                    self._options[opt] = True     # Str to boolean
+                    self._options[opt] = True  # Str to boolean
                 elif env[opt].lower() in ['false', 'no', 'n', '0']:
-                    self._options[opt] = False    # Str to boolean
+                    self._options[opt] = False  # Str to boolean
             # Checking kwargs
             elif opt in input_options:
-                self._options[opt] = input_options[opt]      # Getting option from kwargs
+                self._options[opt] = input_options[opt]  # Getting option from kwargs
 
         # Getting connection info
         for field in self._connection_data.keys():
@@ -120,16 +122,18 @@ class Database:
 
     # Connection #
     def begin(self):
+        if self._con is not None and self._con.open:
+            return
+
         self._con = pymysql.connect(**self._connection_data)
 
         self._drop_tables()
         self._check()
 
     def end(self):
-        try:
+        if self._con.open:
             self._con.close()
-        except AttributeError:
-            pass
+
     # ----- #
 
     # Utils #
@@ -186,6 +190,7 @@ class Database:
             elif 'all_str' in options.keys() and options['all_str']:
                 new_vals[key] = str(val)
         return new_vals
+
     # ----- #
 
     # Options #
@@ -256,8 +261,10 @@ class Database:
                         continue
 
                     # Changing data type
-                    if self._options['update_cols'] and not self._compare_data_types(self._data['tables'][table][col], db_cols[col][0]):
-                        cur.execute(f"ALTER TABLE {table} MODIFY COLUMN {col} {' '.join(self._data['tables'][table][col])};")
+                    if self._options['update_cols'] and not self._compare_data_types(self._data['tables'][table][col],
+                                                                                     db_cols[col][0]):
+                        cur.execute(
+                            f"ALTER TABLE {table} MODIFY COLUMN {col} {' '.join(self._data['tables'][table][col])};")
 
             # Checking tables
             for table in self._data['tables']:
@@ -265,6 +272,7 @@ class Database:
                     cur.execute(self._gen_table_creating_cmd(table))
         # Committing changes
         self._con.commit()
+
     # ----- #
 
     # Methods #
@@ -308,6 +316,7 @@ class Database:
         self.execute(request)
 
     def execute(self, sql):
+        self.begin()
         with self._con.cursor() as cur:
             cur.execute(sql)
             self._con.commit()
