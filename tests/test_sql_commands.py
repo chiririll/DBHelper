@@ -16,9 +16,14 @@ class TestCommands(unittest.TestCase):
     # Updating values
     def test_update(self):
         self.db.insert_or_update('messages', id=2, message="Testing")
+
         self.db.update('messages', "id=2", message="Testing update")
         message = self.db.select('messages', ['message'], "WHERE id=2")[0][0]
         self.assertEqual("Testing update", message)
+
+        self.db.update('messages', "WHERE id=2", message="Testing update 2")
+        message = self.db.select('messages', ['message'], "WHERE id=2")[0][0]
+        self.assertEqual("Testing update 2", message)
 
     # Adding new or changing
     def test_insert_or_update(self):
