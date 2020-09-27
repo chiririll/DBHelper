@@ -187,6 +187,8 @@ class Database:
         for key, val in values.items():
             if type(val) == str and val != '*':
                 new_vals[key] = f"\'{val}\'"
+            elif val is None:
+                new_vals[key] = "NULL"
             elif 'all_str' in options.keys() and options['all_str']:
                 new_vals[key] = str(val)
         return new_vals

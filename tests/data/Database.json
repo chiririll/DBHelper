@@ -10,7 +10,8 @@
   "tables": {
     "messages": {
       "id": "KEY",
-      "message": ["TEXT"]
+      "message": ["TEXT"],
+      "test_none": ["TINYINT"]
     }
   }
 }

@@ -39,7 +39,10 @@ class TestOptions(unittest.TestCase):
 
         # Remove
         db = Database('data/Database.json', remove_cols=True)
-        self.assertEqual(2, len(db.execute("DESCRIBE messages")))
+        cols = []
+        for col in db.execute("DESCRIBE messages"):
+            cols.append(col[0])
+        self.assertEqual(['id', 'message', 'test_none'], cols)
     # ----- #
 
     # Check #

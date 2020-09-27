@@ -9,7 +9,7 @@ class TestCommands(unittest.TestCase):
     # Inserting values
     def test_insert(self):
         self.db.delete('messages', "id=1")
-        self.db.insert('messages', message="Testing insert", id=1)
+        self.db.insert('messages', message="Testing insert", id=1, test_none=None)
         message = self.db.select('messages', ['message'], "WHERE id=1")[0][0]
         self.assertEqual("Testing insert", message)
 
