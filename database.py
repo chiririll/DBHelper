@@ -186,6 +186,7 @@ class Database:
         new_vals = {}
         for key, val in values.items():
             if type(val) == str and val != '*':
+                val = val.replace('\'', '\"')
                 new_vals[key] = f"\'{val}\'"
             elif val is None:
                 new_vals[key] = "NULL"
