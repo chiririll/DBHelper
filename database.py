@@ -284,22 +284,52 @@ class Database:
         return self._custom_functions[function](self, **kwargs)
 
     def insert(self, table, **values):
+        # Returning request
+        return_request = ('_request' in values.keys() and values['_request'])
+        if return_request:
+            del values['_request']
+
         values = self._prepare_vals(values, all_str=True)
-        request = f"INSERT INTO {table} ({', '.join(values.keys())}) VALUES ({', '.join(values.values())})"
+        request = f"INSERT INTO {table} ({', '.join(values.keys())}) VALUES ({', '.join(values.values())});"
+
+        if return_request:
+            return request
+
         self.execute(request)
 
     def insert_or_update(self, table, **values):
+        # Returning request
+        return_request = ('_request' in values.keys() and values['_request'])
+        if return_request:
+            del values['_request']
+
         values = self._prepare_vals(values, all_str=True)
 
         request = f"INSERT INTO {table} ({', '.join(values.keys())}) VALUES ({', '.join(values.values())}) " \
-                  f"ON DUPLICATE KEY UPDATE {', '.join(list(map(lambda pair: '='.join(pair), values.items())))}"
+                  f"ON DUPLICATE KEY UPDATE {', '.join(list(map(lambda pair: '='.join(pair), values.items())))};"
+
+        if return_request:
+            return request
+
         self.execute(request)
 
-    def select(self, table, columns, addition=""):
+    def select(self, table, columns, addition="", **params):
         request = f"SELECT {', '.join(columns)} FROM {table} {addition}"
+        if addition == "":
+            request = request[:-1] + ';'
+
+        # Returning request
+        if '_request' in params.keys() and params['_request']:
+            return request
+
         return self.execute(request)
 
     def update(self, table, condition="", **values):
+        # Returning request
+        return_request = ('_request' in values.keys() and values['_request'])
+        if return_request:
+            del values['_request']
+
         values = self._prepare_vals(values, all_str=True)
         request = f"UPDATE {table} SET {', '.join(list(map(lambda pair: '='.join(pair), values.items())))}"
 
@@ -310,12 +340,22 @@ class Database:
         if len(condition) > 0:
             request = request + ' WHERE ' + condition
 
+        request += ';'
+
+        if return_request:
+            return request
+
         self.execute(request)
 
-    def delete(self, table, condition):
-        request = f"DELETE FROM {table} WHERE {condition}"
+    def delete(self, table, condition, **params):
+        request = f"DELETE FROM {table} WHERE {condition};"
         if condition == '*':
-            request = f"DELETE * FROM {table}"
+            request = f"DELETE * FROM {table};"
+
+        # Returning request
+        if '_request' in params.keys() and params['_request']:
+            return request
+
         self.execute(request)
 
     def execute(self, sql):
@@ -324,7 +364,6 @@ class Database:
             cur.execute(sql)
             self._con.commit()
             resp = cur.fetchall()
-            # if len(resp) == 1:
-            #     return resp[0]
             return resp
+
     # ----- #

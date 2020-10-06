@@ -91,6 +91,8 @@ Default value is **bold**.
 
 - **execute**(_str_ sql_code)
 
+For all methods, except execute, you can use option _request for getting sql request as text.
+
 ### Advanced methods
 
 - **db.run**(_str_ function_name, _kwargs_ params) - Run custom function added with option _functions_
@@ -98,6 +100,7 @@ Default value is **bold**.
 ## Custom Functions 
 
 Custom function can be executed with method: 
+
 - **db.run**(_str_ function_name, _kwargs_ params)
 
 ### Example code
