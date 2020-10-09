@@ -30,9 +30,11 @@ Instead of json you can use path to file with json, dict or file reader.
         },
         "groups_t": {
           "id": ["TINYINT", "UNSIGNED"],
+          "admin": "FOREIGN KEY"
           "name": ["VARCHAR(32)", "UNIQUE", "NOT NULL"],
           "participants": ["TEXT"],
-          "_KEY": "id"
+          "_KEY": "id",
+          "FOREIGN KEY": ["admin", "users(id)"]
         },
         "facts": {
           "name": ["VARCHAR(30)", "NOT NULL"],
@@ -47,6 +49,8 @@ Instead of json you can use path to file with json, dict or file reader.
 - **_KEY** - Primary key
 
 - **_ADDITION** - SQL code that adds to creating table request
+
+- **FOREIGN KEY** - foreign key, "FOREIGN KEY": ["Column in this table", "table(column)"]
 
 ## Connection data
 

@@ -1,0 +1,21 @@
+{
+  "connection": {
+    "db": "DBHelper",
+    "port": 3306,
+    "host": "localhost",
+    "user": "root",
+    "password": ""
+  },
+
+  "tables": {
+    "users": {
+      "id": "KEY"
+    },
+    "messages": {
+      "id": "KEY",
+      "sender": "FOREIGN KEY",
+      "message": ["TEXT"],
+      "FOREIGN KEY": ["sender", "users(id)"]
+    }
+  }
+}

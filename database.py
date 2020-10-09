@@ -157,10 +157,14 @@ class Database:
                 command += f'PRIMARY KEY({params})'
             elif col == '_ADDITION':
                 command += params
+            elif col == 'FOREIGN KEY':
+                command += col + f"({params[0]}) REFERENCES {params[1]}"
             else:
                 command += col + ' '
                 if params == 'KEY':
                     command += "INT AUTO_INCREMENT NOT NULL PRIMARY KEY"
+                elif params == 'FOREIGN KEY':
+                    command += "INT NOT NULL"
                 else:
                     command += ' '.join(params)
             command += ', '
@@ -168,7 +172,7 @@ class Database:
 
     @staticmethod
     def _compare_data_types(local, db):
-        if local == 'KEY':
+        if local in ['KEY', 'FOREIGN KEY']:
             return True
         local = local[0]
 
@@ -230,6 +234,7 @@ class Database:
         # Recreating tables
         self._check()
 
+    # TODO: Fix adding/changing foreign key, _key, key and _addition
     def _check(self):
         if self._states['checked'] or not self._options['check']:
             return
@@ -253,12 +258,23 @@ class Database:
                 # Removing unknown columns
                 for col in db_cols.keys():
                     if col not in self._data['tables'][table].keys():
-                        cur.execute(f"ALTER TABLE {table} DROP COLUMN {col};")
+                        try:
+                            cur.execute(f"ALTER TABLE {table} DROP COLUMN {col};")
+                        except pymysql.err.OperationalError as e:
+                            if e.args[0] != 1828:
+                                raise e
+
+                            key = e.args[1].split()[-1][1:-1]
+                            cur.execute(f"ALTER TABLE {table} DROP CONSTRAINT {key}")
+                            cur.execute(f"ALTER TABLE {table} DROP COLUMN {col};")
 
                 # Checking columns
                 for col in self._data['tables'][table].keys():
                     # Skipping keywords
-                    if col.upper() in ['_ADDITION', '_KEY']:
+                    if col.upper() in ['_ADDITION', '_KEY', 'FOREIGN KEY']:
+                        continue
+                    # TODO: Refactor
+                    if self._data['tables'][table][col] in ['FOREIGN KEY', 'KEY']:
                         continue
 
                     # Adding missing columns
