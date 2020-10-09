@@ -164,7 +164,7 @@ class Database:
                 if params == 'KEY':
                     command += "INT AUTO_INCREMENT NOT NULL PRIMARY KEY"
                 elif params == 'FOREIGN KEY':
-                    command += "INT NOT NULL"
+                    command += "INT"
                 else:
                     command += ' '.join(params)
             command += ', '
