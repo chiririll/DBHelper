@@ -102,7 +102,10 @@ class Database:
         for field in self._connection_data.keys():
             # Checking environment
             if 'DBH_' + field.upper() in env:
-                self._connection_data[field] = env['DBH_' + field.upper()]
+                if field == 'port':
+                    self._connection_data[field] = int(env['DBH_' + field.upper()])
+                else:
+                    self._connection_data[field] = env['DBH_' + field.upper()]
             # Checking user options
             elif field in input_options:
                 self._connection_data[field] = input_options[field]
