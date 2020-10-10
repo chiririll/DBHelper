@@ -303,10 +303,13 @@ class Database:
         return self._custom_functions[function](self, **kwargs)
 
     def insert(self, table, **values):
-        # Returning request
+        # Options
         return_request = ('_request' in values.keys() and values['_request'])
+        return_id = ('_return_id' in values.keys() and values['_return_id'])
         if return_request:
             del values['_request']
+        if return_id:
+            del values['_return_id']
 
         values = self._prepare_vals(values, all_str=True)
         request = f"INSERT INTO {table} ({', '.join(values.keys())}) VALUES ({', '.join(values.values())});"
@@ -316,11 +319,17 @@ class Database:
 
         self.execute(request)
 
+        if return_id:
+            return self.execute("SELECT LAST_INSERT_ID();")[0][0]
+
     def insert_or_update(self, table, **values):
-        # Returning request
+        # Options
         return_request = ('_request' in values.keys() and values['_request'])
+        return_id = ('_return_id' in values.keys() and values['_return_id'])
         if return_request:
             del values['_request']
+        if return_id:
+            del values['_return_id']
 
         values = self._prepare_vals(values, all_str=True)
 
@@ -331,6 +340,8 @@ class Database:
             return request
 
         self.execute(request)
+        if return_id:
+            return self.execute("SELECT LAST_INSERT_ID();")[0][0]
 
     def select(self, table, columns, addition="", **params):
         request = f"SELECT {', '.join(columns)} FROM {table} {addition}"
