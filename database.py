@@ -86,14 +86,16 @@ class Database:
         #   Other options
         for opt in self._options.keys():
             # Checking environment
-            if 'DBH_' + opt.upper() in env:
+            env_opt = 'DBH_' + opt.upper()
+            if env_opt in env:
                 if opt == 'drop':
-                    self._options[opt] = env[opt].replace(' ', '').split(
-                        ',')  # Getting list of tables to drop from environ
-                elif env[opt].lower() in ['true', 'yes', 'y', '1']:
+                    # Getting list of tables to drop from environ
+                    self._options[opt] = env[env_opt].replace(' ', '').split(',')
+                elif env[env_opt].lower() in ['true', 'yes', 'y', '1']:
                     self._options[opt] = True  # Str to boolean
-                elif env[opt].lower() in ['false', 'no', 'n', '0']:
+                elif env[env_opt].lower() in ['false', 'no', 'n', '0']:
                     self._options[opt] = False  # Str to boolean
+
             # Checking kwargs
             elif opt in input_options:
                 self._options[opt] = input_options[opt]  # Getting option from kwargs
